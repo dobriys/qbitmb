@@ -4,6 +4,14 @@
 
 The stock qBittorrent WebUI with a macOS look and speeds in bits. Installs as a Docker mod for the [linuxserver/qbittorrent](https://docs.linuxserver.io/images/docker-qbittorrent) image or as a regular alternative WebUI.
 
+## Screenshots
+
+![Main window, light theme](docs/screenshots/main-light.png)
+
+![Main window, dark theme, with the torrent context menu](docs/screenshots/main-dark.png)
+
+<img src="docs/screenshots/options-light.png" alt="Options window" width="600">
+
 ## Installation
 
 ### With Docker (linuxserver/qbittorrent)

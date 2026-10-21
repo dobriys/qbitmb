@@ -4,6 +4,14 @@
 
 Стандартный веб-интерфейс qBittorrent в оформлении macOS и со скоростью в битах. Ставится как Docker mod для образа [linuxserver/qbittorrent](https://docs.linuxserver.io/images/docker-qbittorrent) или как обычный альтернативный веб-интерфейс.
 
+## Скриншоты
+
+![Главное окно, светлая тема](docs/screenshots/main-light.png)
+
+![Главное окно, тёмная тема, контекстное меню торрента](docs/screenshots/main-dark.png)
+
+<img src="docs/screenshots/options-light.png" alt="Окно настроек" width="600">
+
 ## Установка
 
 ### Через Docker (linuxserver/qbittorrent)
