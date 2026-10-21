@@ -1,3 +1,30 @@
+diff --git a/private/scripts/addtorrent.js b/private/scripts/addtorrent.js
+index 6f1b58c..7d48179 100644
+--- a/private/scripts/addtorrent.js
++++ b/private/scripts/addtorrent.js
+@@ -355,8 +355,8 @@ window.qBittorrent.AddTorrent ??= (() => {
+     const submitForm = () => {
+         document.getElementById("startTorrentHidden").value = document.getElementById("startTorrent").checked ? "false" : "true";
+ 
+-        document.getElementById("dlLimitHidden").value = Number(document.getElementById("dlLimitText").value) * 1024;
+-        document.getElementById("upLimitHidden").value = Number(document.getElementById("upLimitText").value) * 1024;
++        document.getElementById("dlLimitHidden").value = window.qBittorrent.Misc.speedLimitToBytes(Number(document.getElementById("dlLimitText").value));
++        document.getElementById("upLimitHidden").value = window.qBittorrent.Misc.speedLimitToBytes(Number(document.getElementById("upLimitText").value));
+ 
+         if (table !== null) {
+             document.getElementById("filePriorities").value = table.getFileTreeArray()
+@@ -436,6 +436,11 @@ window.qBittorrent.AddTorrent ??= (() => {
+         document.getElementById("useDownloadPath").addEventListener("change", (e) => changeUseDownloadPath(e.target.checked));
+         document.getElementById("tagsSelect").addEventListener("change", (e) => changeTagsSelect(e.target));
+         document.getElementById("savepath").addEventListener("input", (event) => { showFreeSpace(event.target.value); });
++
++        if (window.qBittorrent.Misc.isSpeedInBits()) {
++            for (const inputId of ["dlLimitText", "upLimitText"])
++                document.getElementById(inputId).placeholder = window.qBittorrent.Misc.speedLimitUnitText();
++        }
+     });
+ 
+     return exports();
 diff --git a/private/scripts/client.js b/private/scripts/client.js
 index 48c2697..bb0c8b1 100644
 --- a/private/scripts/client.js
@@ -11,10 +38,21 @@ index 48c2697..bb0c8b1 100644
              "search_in_filter",
              "show_filters_sidebar",
 diff --git a/private/scripts/misc.js b/private/scripts/misc.js
-index e7a038a..2eec40b 100644
+index e7a038a..5958501 100644
 --- a/private/scripts/misc.js
 +++ b/private/scripts/misc.js
-@@ -122,6 +122,33 @@ window.qBittorrent.Misc ??= (() => {
+@@ -37,6 +37,10 @@ window.qBittorrent.Misc ??= (() => {
+             createDebounceHandler: createDebounceHandler,
+             filterInPlace: filterInPlace,
+             friendlyUnit: friendlyUnit,
++            isSpeedInBits: isSpeedInBits,
++            speedLimitFromBytes: speedLimitFromBytes,
++            speedLimitToBytes: speedLimitToBytes,
++            speedLimitUnitText: speedLimitUnitText,
+             friendlyDuration: friendlyDuration,
+             friendlyPercentage: friendlyPercentage,
+             parseHtmlLinks: parseHtmlLinks,
+@@ -122,6 +126,47 @@ window.qBittorrent.Misc ??= (() => {
          array.splice(j, (array.length - j));
      };
  
@@ -33,22 +71,36 @@ index e7a038a..2eec40b 100644
 +            "QBT_TR(Tbit)QBT_TR[CONTEXT=qbitmb]"
 +        ];
 +
++        // Round to nearest, so that a 50 Mbit/s limit reads "50.0" and not "49.9";
++        // values that would round to 1000 move to the next unit
 +        let value = bytesPerSecond * 8;
 +        let i = 0;
-+        while ((value >= 1000) && (i < (units.length - 1))) {
++        while ((value >= 999.95) && (i < (units.length - 1))) {
 +            value /= 1000;
 +            ++i;
 +        }
 +
-+        // Don't round up
-+        const number = (i === 0) ? `${value}` : toFixedPointString(value, ((i <= 2) ? 1 : 2));
++        const number = (i === 0) ? `${value}` : value.toFixed((i <= 2) ? 1 : 2);
 +        return `${number} ${units[i]}QBT_TR(/s)QBT_TR[CONTEXT=misc]`;
 +    };
++
++    // qbitmb: speed limit inputs take Mbit/s instead of KiB/s when speed is shown in bits.
++    // qBittorrent keeps limits in whole KiB, so round to the nearest KiB on the way in
++    // and to 0.01 Mbit on the way out: the typed value then reads back unchanged.
++    const speedLimitFromBytes = (bytes) => {
++        return isSpeedInBits() ? (Math.round(bytes / 1250) / 100) : (bytes / 1024);
++    };
++
++    const speedLimitToBytes = (value) => {
++        return isSpeedInBits() ? (Math.round((value * 125000) / 1024) * 1024) : (value * 1024);
++    };
++
++    const speedLimitUnitText = () => "QBT_TR(Mbit/s)QBT_TR[CONTEXT=qbitmb]";
 +
      /*
       * JS counterpart of the function in src/misc.cpp
       */
-@@ -129,6 +156,9 @@ window.qBittorrent.Misc ??= (() => {
+@@ -129,6 +174,9 @@ window.qBittorrent.Misc ??= (() => {
          if ((value === undefined) || (value === null) || Number.isNaN(value) || (value < 0))
              return "QBT_TR(Unknown)QBT_TR[CONTEXT=misc]";
  
@@ -58,8 +110,135 @@ index e7a038a..2eec40b 100644
          const units = [
              "QBT_TR(B)QBT_TR[CONTEXT=misc]",
              "QBT_TR(KiB)QBT_TR[CONTEXT=misc]",
+diff --git a/private/speedlimit.html b/private/speedlimit.html
+index 9b72486..22234f5 100644
+--- a/private/speedlimit.html
++++ b/private/speedlimit.html
+@@ -39,6 +39,13 @@
+             const limitUpdateValue = document.getElementById("limitUpdateValue");
+             const limitUnit = document.getElementById("limitUnit");
+ 
++            const misc = window.parent.qBittorrent.Misc;
++            const inBits = misc.isSpeedInBits();
++            if (inBits) {
++                limitUnit.textContent = misc.speedLimitUnitText();
++                document.getElementById("limitSliderInput").step = "0.1";
++            }
++
+             const setLimitUpdateValue = (value) => {
+                 if (value === 0) {
+                     limitUpdateValue.value = "∞";
+@@ -62,7 +69,7 @@
+             };
+ 
+             applyButton.addEventListener("click", (event) => {
+-                const limit = Number(limitUpdateValue.value) * 1024;
++                const limit = misc.speedLimitToBytes(Number(limitUpdateValue.value));
+ 
+                 fetch(`api/v2/torrents/${setLimitMethod}`, {
+                         method: "POST",
+@@ -94,7 +101,7 @@
+ 
+                     const data = await response.text();
+ 
+-                    const globalLimit = Math.max((Number(data) / 1024), 0);
++                    const globalLimit = Math.max(misc.speedLimitFromBytes(Number(data)), 0);
+ 
+                     // Get torrents download limit
+                     // And create slider
+@@ -112,9 +119,9 @@
+ 
+                             const firstLimit = Math.max(data[hashes[0]], 0);
+                             const isAllFirstLimit = Object.values(data).every(value => value === firstLimit);
+-                            const limit = isAllFirstLimit ? Math.round(firstLimit / 1024) : 0;
++                            const limit = isAllFirstLimit ? (inBits ? misc.speedLimitFromBytes(firstLimit) : Math.round(firstLimit / 1024)) : 0;
+ 
+-                            setupSlider(limit, ((globalLimit > 0) ? globalLimit : 1000));
++                            setupSlider(limit, ((globalLimit > 0) ? globalLimit : (inBits ? 100 : 1000)));
+                         });
+                 });
+ 
+diff --git a/private/views/globalspeedlimits.html b/private/views/globalspeedlimits.html
+index 4b308c2..1150a43 100644
+--- a/private/views/globalspeedlimits.html
++++ b/private/views/globalspeedlimits.html
+@@ -40,12 +40,23 @@
+             const altUploadValue = document.getElementById("altUploadValue");
+             const altDownloadValue = document.getElementById("altDownloadValue");
+ 
++            const misc = window.qBittorrent.Misc;
++            if (misc.isSpeedInBits()) {
++                for (const unit of document.querySelectorAll(".qbitmbSpeedLimitUnit"))
++                    unit.textContent = misc.speedLimitUnitText();
++                for (const sliderId of ["uploadSlider", "downloadSlider", "altUploadSlider", "altDownloadSlider"]) {
++                    const slider = document.getElementById(sliderId);
++                    slider.max = 1000;
++                    slider.step = 0.1;
++                }
++            }
++
+             const applyButton = document.getElementById("applyButton");
+             applyButton.addEventListener("click", (_event) => {
+-                const upload = Number(uploadValue.value) * 1024 || 0;
+-                const download = Number(downloadValue.value) * 1024 || 0;
+-                const altUpload = Number(altUploadValue.value) * 1024 || 0;
+-                const altDownload = Number(altDownloadValue.value) * 1024 || 0;
++                const upload = misc.speedLimitToBytes(Number(uploadValue.value)) || 0;
++                const download = misc.speedLimitToBytes(Number(downloadValue.value)) || 0;
++                const altUpload = misc.speedLimitToBytes(Number(altUploadValue.value)) || 0;
++                const altDownload = misc.speedLimitToBytes(Number(altDownloadValue.value)) || 0;
+ 
+                 fetch("api/v2/transfer/setSpeedLimits", {
+                     method: "POST",
+@@ -70,10 +81,10 @@
+                 })
+                 .then(async (response) => {
+                     const limits = await response.json();
+-                    setupSlider("uploadSlider", uploadValue, (limits.up_limit / 1024));
+-                    setupSlider("downloadSlider", downloadValue, (limits.dl_limit / 1024));
+-                    setupSlider("altUploadSlider", altUploadValue, (limits.alt_up_limit / 1024));
+-                    setupSlider("altDownloadSlider", altDownloadValue, (limits.alt_dl_limit / 1024));
++                    setupSlider("uploadSlider", uploadValue, misc.speedLimitFromBytes(limits.up_limit));
++                    setupSlider("downloadSlider", downloadValue, misc.speedLimitFromBytes(limits.dl_limit));
++                    setupSlider("altUploadSlider", altUploadValue, misc.speedLimitFromBytes(limits.alt_up_limit));
++                    setupSlider("altDownloadSlider", altDownloadValue, misc.speedLimitFromBytes(limits.alt_dl_limit));
+                 });
+         };
+ 
+@@ -117,14 +128,14 @@
+         <input type="range" id="uploadSlider" min="0" max="10000">
+ 
+         <input type="text" id="uploadValue" aria-label="QBT_TR(Upload speed)QBT_TR[CONTEXT=SpeedLimit]">
+-        <span>QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
++        <span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
+ 
+ 
+         <label for="downloadSlider">QBT_TR(Download:)QBT_TR[CONTEXT=SpeedLimit]</label>
+         <input type="range" id="downloadSlider" min="0" max="10000">
+ 
+         <input type="text" id="downloadValue" aria-label="QBT_TR(Download speed)QBT_TR[CONTEXT=SpeedLimit]">
+-        <span>QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
++        <span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
+ 
+     </div>
+ </fieldset>
+@@ -139,12 +150,12 @@
+         <input type="range" id="altUploadSlider" min="0" max="10000">
+         <input type="text" id="altUploadValue" aria-label="QBT_TR(Alternative upload speed)QBT_TR[CONTEXT=SpeedLimit]">
+ 
+-        <span>QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
++        <span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
+ 
+         <label for="altDownloadSlider">QBT_TR(Download:)QBT_TR[CONTEXT=SpeedLimit]</label>
+         <input type="range" id="altDownloadSlider" min="0" max="10000">
+         <input type="text" id="altDownloadValue" aria-label="QBT_TR(Alternative download speed)QBT_TR[CONTEXT=SpeedLimit]">
+-        <span>QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
++        <span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=SpeedLimit]</span>
+     </div>
+ </fieldset>
+ <div style="text-align: center; margin-top: 10px;">
 diff --git a/private/views/preferences.html b/private/views/preferences.html
-index 4e67bb0..e36033d 100644
+index 4e67bb0..7970f5f 100644
 --- a/private/views/preferences.html
 +++ b/private/views/preferences.html
 @@ -40,6 +40,10 @@
@@ -73,6 +252,34 @@ index 4e67bb0..e36033d 100644
      </fieldset>
  
      <fieldset class="settings">
+@@ -702,11 +706,11 @@ QBT_TR((best choice if supported))QBT_TR[CONTEXT=OptionsDialog] QBT_TR(Default p
+                         <img src="images/slow_off.svg" style="height: 2.5em;" alt="QBT_TR(Alternative speed limits)QBT_TR[CONTEXT=MainWindow]">
+                     </td>
+                     <td><label for="upLimitValue">QBT_TR(Upload:)QBT_TR[CONTEXT=OptionsDialog]</label></td>
+-                    <td><input type="number" id="upLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</td>
++                    <td><input type="number" id="upLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;<span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</span></td>
+                 </tr>
+                 <tr>
+                     <td><label for="dlLimitValue">QBT_TR(Download:)QBT_TR[CONTEXT=OptionsDialog]</label></td>
+-                    <td><input type="number" id="dlLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</td>
++                    <td><input type="number" id="dlLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;<span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</span></td>
+                 </tr>
+             </tbody>
+         </table>
+@@ -722,11 +726,11 @@ QBT_TR((best choice if supported))QBT_TR[CONTEXT=OptionsDialog] QBT_TR(Default p
+                         <img src="images/slow.svg" style="height: 2.5em;" alt="QBT_TR(Alternative speed limits)QBT_TR[CONTEXT=MainWindow]">
+                     </td>
+                     <td><label for="altUpLimitValue">QBT_TR(Upload:)QBT_TR[CONTEXT=OptionsDialog]</label></td>
+-                    <td><input type="number" id="altUpLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</td>
++                    <td><input type="number" id="altUpLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;<span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</span></td>
+                 </tr>
+                 <tr>
+                     <td><label for="altDlLimitValue">QBT_TR(Download:)QBT_TR[CONTEXT=OptionsDialog]</label></td>
+-                    <td><input type="number" id="altDlLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</td>
++                    <td><input type="number" id="altDlLimitValue" style="width: 6em;" min="0">&nbsp;&nbsp;<span class="qbitmbSpeedLimitUnit">QBT_TR(KiB/s)QBT_TR[CONTEXT=OptionsDialog]</span></td>
+                 </tr>
+             </tbody>
+         </table>
 @@ -2495,6 +2499,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                      const dateFormat = clientData.get("date_format");
                      const colorScheme = clientData.get("color_scheme");
@@ -89,7 +296,30 @@ index 4e67bb0..e36033d 100644
                      document.getElementById("addTorrentWindowEnabled").checked = addTorrentWindowEnabled === true;
                      document.getElementById("statusBarExternalIP").checked = pref.status_bar_external_ip;
                      document.getElementById("performanceWarning").checked = pref.performance_warning;
-@@ -2983,6 +2989,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -2722,12 +2728,18 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+                     updateFilterSettings();
+ 
+                     // Speed tab
++                    if (window.qBittorrent.Misc.isSpeedInBits()) {
++                        for (const unit of document.querySelectorAll(".qbitmbSpeedLimitUnit"))
++                            unit.textContent = window.qBittorrent.Misc.speedLimitUnitText();
++                        for (const inputId of ["upLimitValue", "dlLimitValue", "altUpLimitValue", "altDlLimitValue"])
++                            document.getElementById(inputId).step = "any";
++                    }
+                     // Global Rate Limits
+-                    document.getElementById("upLimitValue").value = (Number(pref.up_limit) / 1024);
+-                    document.getElementById("dlLimitValue").value = (Number(pref.dl_limit) / 1024);
++                    document.getElementById("upLimitValue").value = window.qBittorrent.Misc.speedLimitFromBytes(Number(pref.up_limit));
++                    document.getElementById("dlLimitValue").value = window.qBittorrent.Misc.speedLimitFromBytes(Number(pref.dl_limit));
+                     // Alternative Global Rate Limits
+-                    document.getElementById("altUpLimitValue").value = (Number(pref.alt_up_limit) / 1024);
+-                    document.getElementById("altDlLimitValue").value = (Number(pref.alt_dl_limit) / 1024);
++                    document.getElementById("altUpLimitValue").value = window.qBittorrent.Misc.speedLimitFromBytes(Number(pref.alt_up_limit));
++                    document.getElementById("altDlLimitValue").value = window.qBittorrent.Misc.speedLimitFromBytes(Number(pref.alt_dl_limit));
+ 
+                     document.getElementById("enable_protocol_combobox").value = pref.bittorrent_protocol;
+                     document.getElementById("limit_utp_rate_checkbox").checked = pref.limit_utp_rate;
+@@ -2983,6 +2995,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                  clientData.color_scheme = "dark";
              const displayDensity = document.getElementById("displayDensitySelect").value;
              clientData.display_density = (displayDensity === "default") ? null : displayDensity;
@@ -97,3 +327,37 @@ index 4e67bb0..e36033d 100644
              settings["status_bar_external_ip"] = document.getElementById("statusBarExternalIP").checked;
              settings["performance_warning"] = document.getElementById("performanceWarning").checked;
              clientData.full_url_tracker_column = document.getElementById("displayFullURLTrackerColumn").checked;
+@@ -3139,14 +3152,14 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+ 
+             // Speed tab
+             // Global Rate Limits
+-            const upLimit = Number(document.getElementById("upLimitValue").value) * 1024;
++            const upLimit = window.qBittorrent.Misc.speedLimitToBytes(Number(document.getElementById("upLimitValue").value));
+             if (Number.isNaN(upLimit) || (upLimit < 0)) {
+                 alert("QBT_TR(Global upload rate limit must be greater than 0 or disabled.)QBT_TR[CONTEXT=HttpServer]");
+                 return;
+             }
+             settings["up_limit"] = upLimit;
+ 
+-            const dlLimit = Number(document.getElementById("dlLimitValue").value) * 1024;
++            const dlLimit = window.qBittorrent.Misc.speedLimitToBytes(Number(document.getElementById("dlLimitValue").value));
+             if (Number.isNaN(dlLimit) || (dlLimit < 0)) {
+                 alert("QBT_TR(Global download rate limit must be greater than 0 or disabled.)QBT_TR[CONTEXT=HttpServer]");
+                 return;
+@@ -3154,14 +3167,14 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+             settings["dl_limit"] = dlLimit;
+ 
+             // Alternative Global Rate Limits
+-            const altUpLimit = Number(document.getElementById("altUpLimitValue").value) * 1024;
++            const altUpLimit = window.qBittorrent.Misc.speedLimitToBytes(Number(document.getElementById("altUpLimitValue").value));
+             if (Number.isNaN(altUpLimit) || (altUpLimit < 0)) {
+                 alert("QBT_TR(Alternative upload rate limit must be greater than 0 or disabled.)QBT_TR[CONTEXT=HttpServer]");
+                 return;
+             }
+             settings["alt_up_limit"] = altUpLimit;
+ 
+-            const altDlLimit = Number(document.getElementById("altDlLimitValue").value) * 1024;
++            const altDlLimit = window.qBittorrent.Misc.speedLimitToBytes(Number(document.getElementById("altDlLimitValue").value));
+             if (Number.isNaN(altDlLimit) || (altDlLimit < 0)) {
+                 alert("QBT_TR(Alternative download rate limit must be greater than 0 or disabled.)QBT_TR[CONTEXT=HttpServer]");
+                 return;
