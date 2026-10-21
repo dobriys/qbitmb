@@ -117,11 +117,11 @@ jobs:
 
           tag="qbt-${VERSION}"
           cat > notes.md <<EOF
-          Веб-интерфейс qbitmb для qBittorrent ${VERSION}.
+          qbitmb WebUI for qBittorrent ${VERSION}.
 
-          Распакуйте \`qbitmb.zip\` и укажите папку \`qbitmb\` в **Настройки → Веб-интерфейс → Использовать альтернативный веб-интерфейс**. Подробнее — в [README](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}#readme).
+          Extract \`qbitmb.zip\` and point **Options → WebUI → Use alternative WebUI → Files location** to the \`qbitmb\` folder. See the [README](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}#readme) for details.
 
-          Собрано из ${GITHUB_SHA::7}.
+          Built from ${GITHUB_SHA::7}.
           EOF
 
           # one release per qBittorrent version, rebuilt from the latest commit
@@ -129,6 +129,6 @@ jobs:
           gh release create "${tag}" qbitmb.zip \
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
-            --title "qbitmb для qBittorrent ${VERSION}" \
+            --title "qbitmb for qBittorrent ${VERSION}" \
             --notes-file notes.md \
             --latest="${LATEST}"
