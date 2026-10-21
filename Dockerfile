@@ -9,6 +9,7 @@ RUN apk add --no-cache curl patch qt6-qttools
 
 COPY patches/ /tmp/patches/
 COPY i18n/ /tmp/i18n/
+COPY theme/ /tmp/theme/
 COPY root/ /root-layer/
 
 RUN \
@@ -23,6 +24,11 @@ RUN \
   for p in /tmp/patches/*.patch; do \
     patch -p1 --forward --fuzz=0 --no-backup-if-mismatch < "${p}"; \
   done && \
+  echo "**** add macOS theme ****" && \
+  cp /tmp/theme/qbitmb-macos.css private/css/ && \
+  cp /tmp/theme/qbitmb-macos.css public/css/ && \
+  find private public -name '*.html' -exec grep -l '</head>' {} + \
+    | xargs sed -i 's#</head>#    <link rel="stylesheet" type="text/css" href="css/qbitmb-macos.css?v=${CACHEID}">\n</head>#' && \
   echo "**** compile translations ****" && \
   mkdir -p /root-layer/qbitmb/translations && \
   for ts in translations/webui_*.ts; do \

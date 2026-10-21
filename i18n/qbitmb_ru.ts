@@ -28,6 +28,10 @@
         <translation>Мбит/с</translation>
     </message>
     <message>
+        <source>Use macOS style</source>
+        <translation>Оформление в стиле macOS</translation>
+    </message>
+    <message>
         <source>Show speed in bits (kbit/s, Mbit/s)</source>
         <translation>Показывать скорость в битах (Кбит/с, Мбит/с)</translation>
     </message>

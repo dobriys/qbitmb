@@ -26,17 +26,31 @@ index 6f1b58c..7d48179 100644
  
      return exports();
 diff --git a/private/scripts/client.js b/private/scripts/client.js
-index 48c2697..bb0c8b1 100644
+index 48c2697..4c7c44d 100644
 --- a/private/scripts/client.js
 +++ b/private/scripts/client.js
-@@ -73,6 +73,7 @@ window.qBittorrent.Client ??= (() => {
+@@ -73,6 +73,8 @@ window.qBittorrent.Client ??= (() => {
              "display_density",
              "full_url_tracker_column",
              "hide_zero_status_filters",
++            "qbitmb_macos_style",
 +            "qbitmb_speed_in_bits",
              "qbt_selected_log_levels",
              "search_in_filter",
              "show_filters_sidebar",
+diff --git a/private/scripts/color-scheme.js b/private/scripts/color-scheme.js
+index c303a91..69b21ae 100644
+--- a/private/scripts/color-scheme.js
++++ b/private/scripts/color-scheme.js
+@@ -45,6 +45,8 @@ window.qBittorrent.ColorScheme ??= (() => {
+         const validScheme = (colorScheme === "light") || (colorScheme === "dark");
+         const isDark = colorSchemeQuery.matches;
+         root.classList.toggle("dark", ((!validScheme && isDark) || (colorScheme === "dark")));
++        // qbitmb: macOS style is on unless turned off in Options
++        root.classList.toggle("qbitmb-classic", (clientData?.get("qbitmb_macos_style") === false));
+     };
+ 
+     colorSchemeQuery.addEventListener("change", (_event) => update());
 diff --git a/private/scripts/misc.js b/private/scripts/misc.js
 index e7a038a..5958501 100644
 --- a/private/scripts/misc.js
@@ -238,13 +252,17 @@ index 4b308c2..1150a43 100644
  </fieldset>
  <div style="text-align: center; margin-top: 10px;">
 diff --git a/private/views/preferences.html b/private/views/preferences.html
-index 4e67bb0..7970f5f 100644
+index 4e67bb0..43669f3 100644
 --- a/private/views/preferences.html
 +++ b/private/views/preferences.html
-@@ -40,6 +40,10 @@
+@@ -40,6 +40,14 @@
                  <option value="compact">QBT_TR(Compact)QBT_TR[CONTEXT=OptionsDialog]</option>
              </select>
          </div>
++        <div class="formRow" style="margin-top: 3px;">
++            <input type="checkbox" id="qbitmbMacosStyle">
++            <label for="qbitmbMacosStyle">QBT_TR(Use macOS style)QBT_TR[CONTEXT=qbitmb]</label>
++        </div>
 +        <div class="formRow" style="margin-top: 3px;">
 +            <input type="checkbox" id="qbitmbSpeedInBits">
 +            <label for="qbitmbSpeedInBits">QBT_TR(Show speed in bits (kbit/s, Mbit/s))QBT_TR[CONTEXT=qbitmb]</label>
@@ -252,7 +270,7 @@ index 4e67bb0..7970f5f 100644
      </fieldset>
  
      <fieldset class="settings">
-@@ -702,11 +706,11 @@ QBT_TR((best choice if supported))QBT_TR[CONTEXT=OptionsDialog] QBT_TR(Default p
+@@ -702,11 +710,11 @@ QBT_TR((best choice if supported))QBT_TR[CONTEXT=OptionsDialog] QBT_TR(Default p
                          <img src="images/slow_off.svg" style="height: 2.5em;" alt="QBT_TR(Alternative speed limits)QBT_TR[CONTEXT=MainWindow]">
                      </td>
                      <td><label for="upLimitValue">QBT_TR(Upload:)QBT_TR[CONTEXT=OptionsDialog]</label></td>
@@ -266,7 +284,7 @@ index 4e67bb0..7970f5f 100644
                  </tr>
              </tbody>
          </table>
-@@ -722,11 +726,11 @@ QBT_TR((best choice if supported))QBT_TR[CONTEXT=OptionsDialog] QBT_TR(Default p
+@@ -722,11 +730,11 @@ QBT_TR((best choice if supported))QBT_TR[CONTEXT=OptionsDialog] QBT_TR(Default p
                          <img src="images/slow.svg" style="height: 2.5em;" alt="QBT_TR(Alternative speed limits)QBT_TR[CONTEXT=MainWindow]">
                      </td>
                      <td><label for="altUpLimitValue">QBT_TR(Upload:)QBT_TR[CONTEXT=OptionsDialog]</label></td>
@@ -280,23 +298,25 @@ index 4e67bb0..7970f5f 100644
                  </tr>
              </tbody>
          </table>
-@@ -2495,6 +2499,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -2495,6 +2503,8 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                      const dateFormat = clientData.get("date_format");
                      const colorScheme = clientData.get("color_scheme");
                      const displayDensity = clientData.get("display_density") ?? "default";
 +                    const speedInBits = clientData.get("qbitmb_speed_in_bits");
++                    const macosStyle = clientData.get("qbitmb_macos_style") ?? true;
                      const fullUrlTrackerColumn = clientData.get("full_url_tracker_column");
                      const useVirtualList = clientData.get("use_virtual_list") ?? true;
                      const hideZeroStatusFilters = clientData.get("hide_zero_status_filters");
-@@ -2520,6 +2525,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -2520,6 +2530,8 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                      // Interface
                      updateColoSchemeSelect(colorScheme);
                      document.getElementById("displayDensitySelect").value = displayDensity;
 +                    document.getElementById("qbitmbSpeedInBits").checked = speedInBits === true;
++                    document.getElementById("qbitmbMacosStyle").checked = macosStyle === true;
                      document.getElementById("addTorrentWindowEnabled").checked = addTorrentWindowEnabled === true;
                      document.getElementById("statusBarExternalIP").checked = pref.status_bar_external_ip;
                      document.getElementById("performanceWarning").checked = pref.performance_warning;
-@@ -2722,12 +2728,18 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -2722,12 +2734,18 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                      updateFilterSettings();
  
                      // Speed tab
@@ -319,15 +339,16 @@ index 4e67bb0..7970f5f 100644
  
                      document.getElementById("enable_protocol_combobox").value = pref.bittorrent_protocol;
                      document.getElementById("limit_utp_rate_checkbox").checked = pref.limit_utp_rate;
-@@ -2983,6 +2995,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -2983,6 +3001,8 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                  clientData.color_scheme = "dark";
              const displayDensity = document.getElementById("displayDensitySelect").value;
              clientData.display_density = (displayDensity === "default") ? null : displayDensity;
 +            clientData.qbitmb_speed_in_bits = document.getElementById("qbitmbSpeedInBits").checked;
++            clientData.qbitmb_macos_style = document.getElementById("qbitmbMacosStyle").checked;
              settings["status_bar_external_ip"] = document.getElementById("statusBarExternalIP").checked;
              settings["performance_warning"] = document.getElementById("performanceWarning").checked;
              clientData.full_url_tracker_column = document.getElementById("displayFullURLTrackerColumn").checked;
-@@ -3139,14 +3152,14 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -3139,14 +3159,14 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
  
              // Speed tab
              // Global Rate Limits
@@ -344,7 +365,7 @@ index 4e67bb0..7970f5f 100644
              if (Number.isNaN(dlLimit) || (dlLimit < 0)) {
                  alert("QBT_TR(Global download rate limit must be greater than 0 or disabled.)QBT_TR[CONTEXT=HttpServer]");
                  return;
-@@ -3154,14 +3167,14 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
+@@ -3154,14 +3174,14 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
              settings["dl_limit"] = dlLimit;
  
              // Alternative Global Rate Limits

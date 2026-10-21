@@ -1,0 +1,1170 @@
+/*
+ * qbitmb: macOS style for the stock qBittorrent WebUI.
+ *
+ * Only looks change: every element stays where qBittorrent puts it.
+ * The whole theme is off when <html> has the "qbitmb-classic" class
+ * (Options > Behavior > Interface > "Use macOS style").
+ *
+ * Base element rules are wrapped in :where() so they have the same
+ * specificity as qBittorrent's own element rules and lose to its
+ * id/class rules. Component rules use the full selector to win.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Palette                                                            */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) {
+    --mac-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Helvetica Neue", "Inter", "Segoe UI", Roboto, system-ui, sans-serif;
+    --mac-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --mac-accent: #007aff;
+    --mac-accent-soft: rgb(0 122 255 / 35%);
+    --mac-red: #ff3b30;
+    --mac-green: #28a745;
+    --mac-orange: #e07a00;
+
+    --mac-label: #1d1d1f;
+    --mac-label-2: rgb(60 60 67 / 65%);
+    --mac-label-3: rgb(60 60 67 / 32%);
+
+    --mac-window: #f2f2f4;
+    --mac-sidebar: #e9e9ed;
+    --mac-content: #ffffff;
+    --mac-group: #ffffff;
+    --mac-alt-row: #f5f5f7;
+
+    --mac-hover: rgb(0 0 0 / 4.5%);
+    --mac-fill: rgb(0 0 0 / 6%);
+    --mac-fill-strong: rgb(0 0 0 / 10%);
+    --mac-separator: rgb(0 0 0 / 10%);
+
+    --mac-control: #ffffff;
+    --mac-control-border: rgb(0 0 0 / 16%);
+    --mac-button: #ffffff;
+    --mac-button-shadow: 0 0 0 0.5px rgb(0 0 0 / 14%), 0 0.5px 1.5px rgb(0 0 0 / 12%);
+    --mac-segment-track: rgb(0 0 0 / 6%);
+    --mac-segment-selected: #ffffff;
+    --mac-segment-shadow: 0 0 0 0.5px rgb(0 0 0 / 6%), 0 1px 2.5px rgb(0 0 0 / 14%);
+
+    --mac-glass: rgb(255 255 255 / 66%);
+    --mac-glass-edge: inset 0 0.5px 0 rgb(255 255 255 / 90%), 0 0 0 0.5px rgb(0 0 0 / 10%), 0 1px 4px rgb(0 0 0 / 7%);
+    --mac-menu: rgb(246 246 248 / 80%);
+    --mac-menu-shadow: 0 0 0 0.5px rgb(0 0 0 / 14%), 0 12px 32px rgb(0 0 0 / 18%), 0 2px 6px rgb(0 0 0 / 8%);
+    --mac-window-shadow: 0 0 0 0.5px rgb(0 0 0 / 18%), 0 24px 70px rgb(0 0 0 / 26%), 0 6px 18px rgb(0 0 0 / 12%);
+
+    --mac-radius-window: 16px;
+    --mac-radius-menu: 12px;
+    --mac-radius-control: 7px;
+
+    --mac-scrollbar: rgb(0 0 0 / 28%);
+
+    --mac-img-chevrons: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='12' viewBox='0 0 8 12'%3E%3Cpath d='M1.2 4.4 4 1.6l2.8 2.8M1.2 7.6 4 10.4l2.8-2.8' fill='none' stroke='%23000' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --mac-img-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='6.8' cy='6.8' r='4.7' fill='none' stroke='%23000' stroke-opacity='.5' stroke-width='1.6'/%3E%3Cpath d='m10.3 10.3 3.7 3.7' stroke='%23000' stroke-opacity='.5' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    --mac-img-sort-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 6.5 5 3.5l3 3' fill='none' stroke='%23000' stroke-opacity='.55' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --mac-img-sort-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5l3-3' fill='none' stroke='%23000' stroke-opacity='.55' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --mac-img-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.3 5 8.6l4.5-5.1' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --mac-img-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' stroke='%23fff' stroke-width='1.9' stroke-linecap='round'/%3E%3C/svg%3E");
+
+    /* qBittorrent's own palette, mapped onto the macOS one */
+    --color-accent-blue: var(--mac-accent);
+    --color-text-blue: var(--mac-accent);
+    --color-text-red: var(--mac-red);
+    --color-text-green: var(--mac-green);
+    --color-text-disabled: var(--mac-label-3);
+    --color-text-default: var(--mac-label);
+    --color-background-primary: var(--mac-content);
+    --color-background-blue: var(--mac-accent);
+    --color-background-popup: var(--mac-window);
+    --color-background-default: var(--mac-alt-row);
+    --color-background-hover: var(--mac-accent);
+    --color-border-blue: var(--mac-accent);
+    --color-border-default: var(--mac-separator);
+}
+
+:root.dark:not(.qbitmb-classic) {
+    --mac-accent: #0a84ff;
+    --mac-accent-soft: rgb(10 132 255 / 45%);
+    --mac-red: #ff453a;
+    --mac-green: #32d74b;
+    --mac-orange: #ff9f0a;
+
+    --mac-label: rgb(255 255 255 / 88%);
+    --mac-label-2: rgb(235 235 245 / 60%);
+    --mac-label-3: rgb(235 235 245 / 30%);
+
+    --mac-window: #262628;
+    --mac-sidebar: #2c2c2f;
+    --mac-content: #1e1e20;
+    --mac-group: #2f2f32;
+    --mac-alt-row: rgb(255 255 255 / 3.5%);
+
+    --mac-hover: rgb(255 255 255 / 5%);
+    --mac-fill: rgb(255 255 255 / 8%);
+    --mac-fill-strong: rgb(255 255 255 / 13%);
+    --mac-separator: rgb(255 255 255 / 10%);
+
+    --mac-control: rgb(255 255 255 / 7%);
+    --mac-control-border: rgb(255 255 255 / 22%);
+    --mac-button: rgb(255 255 255 / 14%);
+    --mac-button-shadow: 0 0 0 0.5px rgb(255 255 255 / 8%), 0 0.5px 1.5px rgb(0 0 0 / 30%);
+    --mac-segment-track: rgb(255 255 255 / 8%);
+    --mac-segment-selected: rgb(255 255 255 / 22%);
+    --mac-segment-shadow: 0 1px 2.5px rgb(0 0 0 / 35%);
+
+    --mac-glass: rgb(255 255 255 / 9%);
+    --mac-glass-edge: inset 0 0.5px 0 rgb(255 255 255 / 14%), 0 0 0 0.5px rgb(0 0 0 / 40%), 0 1px 4px rgb(0 0 0 / 25%);
+    --mac-menu: rgb(40 40 43 / 82%);
+    --mac-menu-shadow: 0 0 0 0.5px rgb(0 0 0 / 60%), inset 0 0 0 0.5px rgb(255 255 255 / 12%), 0 12px 32px rgb(0 0 0 / 45%);
+    --mac-window-shadow: 0 0 0 0.5px rgb(0 0 0 / 70%), inset 0 0 0 0.5px rgb(255 255 255 / 10%), 0 24px 70px rgb(0 0 0 / 55%);
+
+    --mac-scrollbar: rgb(255 255 255 / 30%);
+
+    --mac-img-chevrons: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='12' viewBox='0 0 8 12'%3E%3Cpath d='M1.2 4.4 4 1.6l2.8 2.8M1.2 7.6 4 10.4l2.8-2.8' fill='none' stroke='%23fff' stroke-opacity='.7' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --mac-img-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='6.8' cy='6.8' r='4.7' fill='none' stroke='%23fff' stroke-opacity='.55' stroke-width='1.6'/%3E%3Cpath d='m10.3 10.3 3.7 3.7' stroke='%23fff' stroke-opacity='.55' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    --mac-img-sort-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 6.5 5 3.5l3 3' fill='none' stroke='%23fff' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --mac-img-sort-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5l3-3' fill='none' stroke='%23fff' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* ------------------------------------------------------------------ */
+/* Base elements                                                      */
+/* ------------------------------------------------------------------ */
+
+:where(:root:not(.qbitmb-classic)) {
+    scrollbar-color: var(--mac-scrollbar) transparent;
+
+    & body {
+        background-color: var(--mac-window);
+        color: var(--mac-label);
+        font-family: var(--mac-font);
+        font-size: 13px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    & body:not(:has(#desktop)) {
+        background-color: var(--mac-window);
+    }
+
+    & a {
+        color: var(--mac-accent);
+    }
+
+    & h2 {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    & h3,
+    & h4 {
+        font-weight: 600;
+    }
+
+    & pre,
+    & code {
+        font-family: var(--mac-mono);
+    }
+
+    & pre {
+        background-color: var(--mac-content);
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 0 0 0.5px var(--mac-separator);
+        color: var(--mac-label);
+    }
+
+    & hr {
+        background-color: var(--mac-separator);
+    }
+
+    /* text fields */
+    & :is(input[type="text"], input[type="search"], input[type="number"], input[type="password"], input[type="url"], input[type="email"], input:not([type]), textarea) {
+        background-color: var(--mac-control);
+        border: 1px solid var(--mac-control-border);
+        border-radius: 6px;
+        box-shadow: inset 0 0.5px 1px rgb(0 0 0 / 5%);
+        color: var(--mac-label);
+        min-height: 22px;
+        padding: 2px 7px;
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    & :is(input, textarea, select, button):focus-visible {
+        border-color: var(--mac-accent);
+        box-shadow: 0 0 0 3px var(--mac-accent-soft);
+        outline: none;
+    }
+
+    & :is(input[type="text"], input[type="search"], input[type="number"], input[type="password"], input[type="url"], input:not([type]), textarea):focus {
+        border-color: var(--mac-accent);
+        box-shadow: 0 0 0 3px var(--mac-accent-soft);
+    }
+
+    & :is(input, textarea, select, button):disabled {
+        opacity: 0.5;
+    }
+
+    & ::placeholder {
+        color: var(--mac-label-3);
+    }
+
+    /* push buttons: capsules, like macOS 26+ */
+    & :is(input[type="button"], input[type="submit"], input[type="reset"], button):not(:where(.categoryToggle, #rememberBtn, .imageButton)) {
+        background-color: var(--mac-button);
+        border: none;
+        border-radius: 999px;
+        box-shadow: var(--mac-button-shadow);
+        color: var(--mac-label);
+        font-weight: 500;
+        line-height: 18px;
+        min-height: 22px;
+        padding: 2px 14px;
+        transition: filter 0.12s ease;
+    }
+
+    & :is(input[type="button"], input[type="submit"], input[type="reset"], button):not(:where(.categoryToggle, #rememberBtn, .imageButton), :disabled):hover {
+        filter: brightness(0.97);
+    }
+
+    & :is(input[type="button"], input[type="submit"], input[type="reset"], button):not(:where(.categoryToggle, #rememberBtn, .imageButton), :disabled):active {
+        filter: brightness(0.9);
+    }
+
+    /* the default action of a dialog */
+    & :is(input[type="submit"], #applyButton, #submitButton, #saveButton, #loginButton, #addPeersOk, #newPluginOk, #createTorrentButton,
+        input[onclick*="applyPreferences"], :is(button, input)[id^="confirm"], #renameButton, #setLocationButton, #saveTorrent, #save,
+        #tagNameButton, #categoryNameButton, #editWebSeedButton, #editTrackerButton, #cloneRssCloneRuleButton) {
+        background-color: var(--mac-accent);
+        box-shadow: 0 0 0 0.5px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 15%);
+        color: #ffffff;
+    }
+
+    /* pop-up buttons */
+    & select:not([multiple], [size]:not([size="1"])) {
+        appearance: none;
+        background: var(--mac-img-chevrons) right 7px center / 8px 12px no-repeat var(--mac-button);
+        border: none;
+        border-radius: 6px;
+        box-shadow: var(--mac-button-shadow);
+        color: var(--mac-label);
+        line-height: 18px;
+        min-height: 22px;
+        padding: 2px 24px 2px 9px;
+    }
+
+    & select:is([multiple], [size]:not([size="1"])) {
+        background-color: var(--mac-content);
+        border: 1px solid var(--mac-control-border);
+        border-radius: 6px;
+        color: var(--mac-label);
+    }
+
+    & option {
+        background-color: var(--mac-content);
+        color: var(--mac-label);
+    }
+
+    /* check boxes and radio buttons */
+    & input[type="checkbox"],
+    & input[type="radio"] {
+        appearance: none;
+        background-color: var(--mac-control);
+        border: none;
+        box-shadow: inset 0 0 0 1px var(--mac-control-border), inset 0 1px 1px rgb(0 0 0 / 5%);
+        cursor: pointer;
+        flex-shrink: 0;
+        height: 14px;
+        position: relative;
+        transition: background-color 0.12s ease;
+        vertical-align: -2px;
+        width: 14px;
+    }
+
+    & input[type="checkbox"] {
+        border-radius: 4px;
+    }
+
+    & input[type="radio"] {
+        border-radius: 50%;
+    }
+
+    & input[type="checkbox"]:checked {
+        background: var(--mac-img-check) center / 11px no-repeat var(--mac-accent);
+        box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 12%);
+    }
+
+    & input[type="checkbox"]:indeterminate {
+        background: var(--mac-img-dash) center / 11px no-repeat var(--mac-accent);
+        box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 12%);
+    }
+
+    & input[type="radio"]:checked {
+        background: radial-gradient(circle, #ffffff 0 2.6px, transparent 3.2px) var(--mac-accent);
+        box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 12%);
+    }
+
+    & input[type="range"] {
+        accent-color: var(--mac-accent);
+    }
+
+    & fieldset {
+        border-color: var(--mac-separator);
+        border-radius: 10px;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrollbars                                                         */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) :where(.dynamicTableDiv, .mochaContentWrapper, .panel, .scrollableMenu, #rssDetailsView, textarea) {
+    scrollbar-color: var(--mac-scrollbar) transparent;
+    scrollbar-width: thin;
+}
+
+/* like macOS, scroll bars show up only when the pointer is over the area */
+:root:not(.qbitmb-classic) :is(.dynamicTableDiv, .panel):not(:hover) {
+    scrollbar-color: transparent transparent;
+}
+
+/* ------------------------------------------------------------------ */
+/* Menu bar and menus                                                 */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) #desktopHeader {
+    background-color: var(--mac-window);
+}
+
+:root:not(.qbitmb-classic) #desktopNavbar {
+    background-color: transparent;
+    padding: 3px 6px 0;
+}
+
+:root:not(.qbitmb-classic) #desktopNavbar ul {
+    font-size: 13px;
+}
+
+:root:not(.qbitmb-classic) #desktopNavbar > ul > li > a {
+    border-radius: 6px;
+    color: var(--mac-label);
+    font-weight: 400;
+    margin: 0 1px;
+    padding: 2px 9px;
+}
+
+:root:not(.qbitmb-classic) #desktopNavbar > ul > li:first-child > a {
+    font-weight: 600;
+}
+
+:root:not(.qbitmb-classic) #desktopNavbar > ul > li:hover > a,
+:root:not(.qbitmb-classic) #desktopNavbar > ul > li > a:hover {
+    background-color: var(--mac-fill-strong);
+    color: var(--mac-label);
+}
+
+/* drop-down menus and context menus share the macOS menu look */
+:root:not(.qbitmb-classic) :is(#desktopNavbar li ul, .contextMenu, .contextMenu li ul) {
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+    background-color: var(--mac-menu);
+    border: none;
+    border-radius: var(--mac-radius-menu);
+    box-shadow: var(--mac-menu-shadow);
+    padding: 5px;
+}
+
+:root:not(.qbitmb-classic) #desktopNavbar li ul li a,
+:root:not(.qbitmb-classic) #desktopNavbar li ul li div.anchor {
+    border-radius: 6px;
+    color: var(--mac-label);
+    line-height: 18px;
+    min-width: 190px;
+    padding: 2px 16px 2px 30px;
+}
+
+:root:not(.qbitmb-classic) :is(#desktopNavbar li ul li a, #desktopNavbar li ul li div.anchor):hover {
+    background-color: var(--mac-accent);
+    color: #ffffff;
+}
+
+:root:not(.qbitmb-classic) .MyMenuIcon {
+    height: 15px;
+    margin: 0 7px -3px -22px;
+    width: 15px;
+}
+
+:root:not(.qbitmb-classic) :is(#desktopNavbar li.divider, .contextMenu li.separator) {
+    border-top: none;
+    margin-top: 5px;
+    padding-top: 6px;
+    position: relative;
+}
+
+:root:not(.qbitmb-classic) :is(#desktopNavbar li.divider, .contextMenu li.separator)::before {
+    background-color: var(--mac-separator);
+    content: "";
+    height: 1px;
+    left: 9px;
+    position: absolute;
+    right: 9px;
+    top: 0;
+}
+
+:root:not(.qbitmb-classic) .contextMenu .separatorBottom {
+    border-bottom: none;
+    box-shadow: 0 6px 0 -5px var(--mac-separator);
+    margin-bottom: 6px;
+}
+
+:root:not(.qbitmb-classic) .contextMenu li a {
+    border-radius: 6px;
+    color: var(--mac-label);
+    gap: 0;
+    line-height: 18px;
+    padding: 2px 26px 2px 8px;
+}
+
+:root:not(.qbitmb-classic) .contextMenu li a:hover {
+    background-color: var(--mac-accent);
+    color: #ffffff;
+}
+
+:root:not(.qbitmb-classic) .contextMenu li img {
+    height: 15px;
+    margin-right: 8px;
+    width: 15px;
+}
+
+:root:not(.qbitmb-classic) .contextMenu li ul {
+    margin: -27px 0 0 calc(100% - 4px);
+}
+
+:root:not(.qbitmb-classic) :is(.contextMenu, #desktopNavbar) li:not(.disabled) .arrow-right::after {
+    border-width: 0 1.5px 1.5px 0;
+    right: 10px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Toolbar                                                            */
+/* ------------------------------------------------------------------ */
+
+/* keeps qBittorrent's own inline flow, so the toolbar wraps the same way */
+:root:not(.qbitmb-classic) #mochaToolbar {
+    font-size: 0;
+    margin-top: 0;
+    padding: 6px 10px 7px;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar :is(#torrentsFilterToolbar, #mainWindowTabs) {
+    font-size: 13px;
+}
+
+/* every button sits in a glass capsule; neighbours share one capsule */
+:root:not(.qbitmb-classic) #mochaToolbar :is(#uploadButton, #downloadButton, #deleteButton, #startButton, #stopButton, #queueingButtons > a, #torrentCreatorButton, #preferencesButton) {
+    align-items: center;
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    backdrop-filter: blur(20px) saturate(170%);
+    background: var(--mac-glass);
+    box-shadow: var(--mac-glass-edge);
+    cursor: pointer;
+    display: inline-flex !important;
+    height: 32px;
+    justify-content: center;
+    margin: 0 0 2px;
+    padding: 0 2px;
+    vertical-align: middle;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar :is(#uploadButton, #queueingButtons > a.divider, a.divider) {
+    border-radius: 999px 0 0 999px;
+    margin-left: 8px;
+    padding-left: 4px;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar #uploadButton {
+    margin-left: 0;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar :is(#deleteButton, #stopButton, #queueingButtons > a:last-child, #torrentCreatorButton, #preferencesButton) {
+    border-radius: 0 999px 999px 0;
+    padding-right: 4px;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar :is(#torrentCreatorButton, #preferencesButton) {
+    border-radius: 999px;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar .divider {
+    background-image: none;
+    padding-top: 0;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar #queueingButtons {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar #queueingButtons.invisible {
+    display: none;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar .mochaToolButton {
+    border-radius: 999px;
+    box-sizing: content-box;
+    height: 18px;
+    margin: 0;
+    opacity: 0.85;
+    padding: 5px;
+    transition: background-color 0.12s ease;
+    width: 18px;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar a:hover .mochaToolButton,
+:root:not(.qbitmb-classic) #mochaToolbar #uploadButton:hover .mochaToolButton {
+    background-color: var(--mac-fill);
+    opacity: 1;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar #torrentsFilterToolbar {
+    align-items: center;
+    display: inline-flex;
+    gap: 6px;
+    height: 32px;
+    margin: 0 0 2px 10px;
+    vertical-align: middle;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar #torrentsFilterToolbar.invisible {
+    display: none;
+}
+
+:root:not(.qbitmb-classic) #mochaToolbar #mainWindowTabs {
+    margin: 3px 0 0;
+}
+
+/* search field */
+:root:not(.qbitmb-classic) :is(#torrentsFilterInput, #torrentFilesFilterInput, #searchPattern, #searchInNameFilter, #rssFilterInput, #filterTextInput) {
+    background: var(--mac-img-search) 9px center / 14px no-repeat var(--mac-fill);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    box-shadow: none;
+    min-height: 28px;
+    min-width: 170px;
+    padding: 3px 12px 3px 29px;
+}
+
+:root:not(.qbitmb-classic) #torrentFilesFilterInput {
+    min-height: 22px;
+    min-width: 0;
+}
+
+:root:not(.qbitmb-classic) :is(#torrentsFilterInput, #torrentFilesFilterInput, #searchPattern, #searchInNameFilter, #rssFilterInput, #filterTextInput):focus {
+    background-color: var(--mac-control);
+    border-color: var(--mac-accent);
+    box-shadow: 0 0 0 3px var(--mac-accent-soft);
+}
+
+:root:not(.qbitmb-classic) #torrentsFilterRegexBox + label,
+:root:not(.qbitmb-classic) #torrentsFilterRegexBox:checked + label {
+    background-color: var(--mac-fill);
+    background-size: 15px;
+    border: none;
+    border-radius: 999px;
+    height: 28px;
+    margin-bottom: 0;
+    width: 28px;
+}
+
+:root:not(.qbitmb-classic) #torrentsFilterRegexBox:checked + label {
+    background-color: var(--mac-accent-soft);
+    box-shadow: inset 0 0 0 1px var(--mac-accent);
+}
+
+/* ------------------------------------------------------------------ */
+/* Segmented controls (window tabs, properties tabs, options tabs)    */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) .tab-menu {
+    background-color: var(--mac-segment-track);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 11.5px;
+    gap: 0;
+    max-width: 100%;
+    padding: 2px;
+}
+
+:root:not(.qbitmb-classic) .tab-menu li a {
+    background-color: transparent;
+    border-radius: 999px;
+    color: var(--mac-label);
+    font-weight: 500;
+    gap: 4px;
+    line-height: 18px;
+    margin: 0;
+    padding: 2px 7px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:root:not(.qbitmb-classic) .tab-menu:not(:hover) {
+    scrollbar-color: transparent transparent;
+}
+
+:root:not(.qbitmb-classic) .tab-menu li:first-child a {
+    margin-left: 0;
+}
+
+:root:not(.qbitmb-classic) .tab-menu li:hover a {
+    background-color: var(--mac-hover);
+    color: var(--mac-label);
+}
+
+:root:not(.qbitmb-classic) .tab-menu li.selected a {
+    background-color: var(--mac-segment-selected);
+    box-shadow: var(--mac-segment-shadow);
+    color: var(--mac-label);
+}
+
+:root:not(.qbitmb-classic) .tab-menu :is(.selected, li:hover) img {
+    filter: none;
+}
+
+:root:not(.qbitmb-classic) .tab-menu img {
+    height: 14px;
+    width: 14px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Main window: sidebar, panels, handles                              */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) #pageWrapper {
+    background-color: var(--mac-content);
+    border-color: var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) #filtersColumn,
+:root:not(.qbitmb-classic) #Filters {
+    background-color: var(--mac-sidebar);
+}
+
+:root:not(.qbitmb-classic) .panel {
+    border-color: var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) .panel-header {
+    background-color: var(--mac-window);
+    border-color: var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) .columnHandle {
+    background: none;
+    border: none;
+    box-shadow: inset 1px 0 0 var(--mac-separator);
+    cursor: col-resize;
+}
+
+:root:not(.qbitmb-classic) .horizontalHandle {
+    background-color: var(--mac-window);
+    box-shadow: inset 0 1px 0 var(--mac-separator);
+    cursor: row-resize;
+}
+
+:root:not(.qbitmb-classic) .horizontalHandle .handleIcon {
+    background: none;
+}
+
+/* sidebar: section headers and rounded selection */
+:root:not(.qbitmb-classic) .filterTitle {
+    color: var(--mac-label-2);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 12px 12px 3px 14px;
+    text-transform: none;
+}
+
+:root:not(.qbitmb-classic) .filterTitle img {
+    opacity: 0.55;
+}
+
+:root:not(.qbitmb-classic) ul.filterList {
+    padding: 0 8px;
+}
+
+:root:not(.qbitmb-classic) ul.filterList span.link {
+    border-radius: 7px;
+    color: var(--mac-label);
+    gap: 7px;
+    line-height: 18px;
+    padding: 3px 8px;
+}
+
+:root:not(.qbitmb-classic) ul.filterList span.link:hover {
+    background-color: var(--mac-hover);
+    color: var(--mac-label);
+}
+
+:root:not(.qbitmb-classic) .selectedFilter > span.link,
+:root:not(.qbitmb-classic) .selectedFilter > span.link:hover {
+    background-color: var(--mac-fill-strong);
+    color: var(--mac-label);
+    font-weight: 500;
+}
+
+:root:not(.qbitmb-classic) ul.filterList span.link:hover :is(img, button),
+:root:not(.qbitmb-classic) ul.filterList .selectedFilter > .link :is(img, button) {
+    filter: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tables                                                             */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) .dynamicTableFixedHeaderDiv table {
+    background-color: var(--mac-content);
+}
+
+:root:not(.qbitmb-classic) :is(#propertiesPanel .dynamicTableFixedHeaderDiv, #torrentsTableFixedHeaderDiv) {
+    border-bottom-color: var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) .dynamicTable th {
+    border-right: none;
+    box-shadow: inset -1px 0 0 var(--mac-separator);
+    color: var(--mac-label-2);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+}
+
+:root:not(.qbitmb-classic) .dynamicTable th.sorted {
+    background-image: var(--mac-img-sort-up);
+    background-position: right 6px center;
+    background-size: 10px;
+    color: var(--mac-label);
+}
+
+:root:not(.qbitmb-classic) .dynamicTable th.sorted.reverse {
+    background-image: var(--mac-img-sort-down);
+}
+
+:root:not(.qbitmb-classic) .dynamicTable td {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+:root:not(.qbitmb-classic) #transferList .dynamicTable td {
+    padding: 3px 8px;
+}
+
+:root:not(.qbitmb-classic) .altRowColors tbody tr:nth-child(odd of :not(.invisible)) {
+    background-color: var(--mac-alt-row);
+}
+
+:root:not(.qbitmb-classic) .dynamicTableDiv table.dynamicTable tbody tr:hover {
+    background-color: var(--mac-hover);
+    color: var(--mac-label);
+}
+
+:root:not(.qbitmb-classic) .dynamicTableDiv table.dynamicTable tbody tr.selected,
+:root:not(.qbitmb-classic) .dynamicTableDiv table.dynamicTable tbody tr.selected:hover {
+    background-color: var(--mac-accent);
+    color: #ffffff;
+}
+
+/* rounded selection, like macOS list views */
+:root:not(.qbitmb-classic) .dynamicTableDiv table.dynamicTable tbody tr.selected > td:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+:root:not(.qbitmb-classic) .dynamicTableDiv table.dynamicTable tbody tr.selected > td:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+:root:not(.qbitmb-classic) .dynamicTable tr:hover img:not(.flags) {
+    filter: none;
+}
+
+:root:not(.qbitmb-classic) .dynamicTable tr.selected img:not(.flags) {
+    filter: var(--color-icon-hover);
+}
+
+:root:not(.qbitmb-classic) :is(#torrentFilesTableDiv, #addTorrentFilesTableDiv) .dynamicTable tr.nonAlt:hover {
+    background-color: var(--mac-hover);
+    color: var(--mac-label);
+}
+
+/* progress bars (custom element, colours come from these variables) */
+:root:not(.qbitmb-classic) progress-bar {
+    --color-background-blue: var(--mac-accent);
+    --color-background-default: var(--mac-fill-strong);
+    --color-text-white: #ffffff;
+    border: none !important;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    overflow: hidden;
+}
+
+:root:not(.qbitmb-classic) tr.selected progress-bar {
+    --color-background-blue: rgb(255 255 255 / 92%);
+    --color-background-default: rgb(255 255 255 / 25%);
+    --color-text-white: var(--mac-accent);
+    --color-text-default: #ffffff;
+}
+
+/* ------------------------------------------------------------------ */
+/* Properties panel                                                   */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) #properties,
+:root:not(.qbitmb-classic) #propertiesPanel {
+    background-color: var(--mac-window);
+}
+
+:root:not(.qbitmb-classic) #propGeneral {
+    padding: 8px 10px;
+}
+
+:root:not(.qbitmb-classic) #propertiesPanel_header {
+    background-color: var(--mac-window);
+}
+
+:root:not(.qbitmb-classic) #propertiesPanel_header .toolbarTabs {
+    padding: 2px 0 0 6px;
+}
+
+:root:not(.qbitmb-classic) td.generalLabel {
+    color: var(--mac-label-2);
+}
+
+:root:not(.qbitmb-classic) #propGeneral h3,
+:root:not(.qbitmb-classic) #mochaPage h3 {
+    border-bottom-color: var(--mac-separator);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+:root:not(.qbitmb-classic) .iconWrapper:hover {
+    background-color: var(--mac-fill);
+    border-color: transparent;
+    border-radius: 6px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Status bar                                                         */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) #desktopFooterWrapper {
+    background-color: var(--mac-window);
+    box-shadow: inset 0 1px 0 var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) #desktopFooter {
+    color: var(--mac-label-2);
+    font-family: var(--mac-font);
+    font-size: 11.5px;
+    padding: 3px 8px;
+}
+
+:root:not(.qbitmb-classic) td.statusBarSeparator {
+    background: linear-gradient(var(--mac-separator), var(--mac-separator)) center 3px / 1px 14px no-repeat;
+}
+
+/* ------------------------------------------------------------------ */
+/* Windows and dialogs                                                */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) .mocha {
+    background-color: var(--mac-window);
+    border-radius: var(--mac-radius-window);
+    box-shadow: var(--mac-window-shadow);
+}
+
+:root:not(.qbitmb-classic) .mochaOverlay {
+    background-color: var(--mac-window);
+    border-radius: var(--mac-radius-window);
+}
+
+:root:not(.qbitmb-classic) .mochaTitlebar {
+    background-color: transparent;
+    border-radius: 0;
+}
+
+:root:not(.qbitmb-classic) .mochaTitlebar h3 {
+    background-image: none !important;
+    color: var(--mac-label);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 76px 4px;
+    text-align: center;
+}
+
+:root:not(.qbitmb-classic) .mocha:not(.isFocused) .mochaTitlebar h3 {
+    color: var(--mac-label-2);
+}
+
+/* traffic lights */
+:root:not(.qbitmb-classic) .mochaControls {
+    display: flex;
+    gap: 8px;
+    height: 12px;
+    left: 12px;
+    right: auto;
+    top: 7px;
+    width: auto;
+}
+
+:root:not(.qbitmb-classic) :is(.mochaCloseButton, .mochaMinimizeButton, .mochaMaximizeButton) {
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 15%);
+    float: none;
+    height: 12px;
+    margin: 0;
+    width: 12px;
+}
+
+:root:not(.qbitmb-classic) .mochaCloseButton {
+    background-color: #ff5f57;
+    order: 0;
+}
+
+:root:not(.qbitmb-classic) .mochaMinimizeButton {
+    background-color: #febc2e;
+    order: 1;
+}
+
+:root:not(.qbitmb-classic) .mochaMaximizeButton {
+    background-color: #28c840;
+    order: 2;
+}
+
+:root:not(.qbitmb-classic) .mocha:not(.isFocused) :is(.mochaCloseButton, .mochaMinimizeButton, .mochaMaximizeButton) {
+    background-color: var(--mac-fill-strong);
+}
+
+:root:not(.qbitmb-classic) :is(.mochaCloseButton, .mochaMinimizeButton, .mochaMaximizeButton)::before,
+:root:not(.qbitmb-classic) :is(.mochaCloseButton, .mochaMaximizeButton)::after {
+    background-color: rgb(0 0 0 / 55%);
+    height: 1.4px;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    width: 7px;
+}
+
+:root:not(.qbitmb-classic) .mochaMaximizeButton::after {
+    height: 7px;
+    width: 1.4px;
+}
+
+:root:not(.qbitmb-classic) .mochaControls:hover :is(.mochaCloseButton, .mochaMinimizeButton, .mochaMaximizeButton)::before,
+:root:not(.qbitmb-classic) .mochaControls:hover :is(.mochaCloseButton, .mochaMaximizeButton)::after {
+    opacity: 1;
+}
+
+:root:not(.qbitmb-classic) .mochaToolbarWrapper {
+    background-color: transparent;
+}
+
+:root:not(.qbitmb-classic) div.mochaToolbarWrapper.bottom {
+    border-bottom-color: var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) .mochaToolbar {
+    border-top: none;
+    padding: 2px 8px 8px;
+}
+
+:root:not(.qbitmb-classic) .mochaContentBorder {
+    border-bottom: none;
+    border-top: 1px solid var(--mac-separator);
+}
+
+:root:not(.qbitmb-classic) .mochaContentWrapper {
+    background-color: var(--mac-window);
+    font-size: 13px;
+}
+
+:root:not(.qbitmb-classic) .mocha .cornerSE {
+    background-color: transparent;
+}
+
+:root:not(.qbitmb-classic) #modalOverlay {
+    background: rgb(0 0 0 / 22%);
+}
+
+/* grouped settings, like System Settings */
+:root:not(.qbitmb-classic) fieldset.settings {
+    background-color: var(--mac-group);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 0 0 0.5px var(--mac-separator), 0 0.5px 1.5px rgb(0 0 0 / 5%);
+    margin: 0 0 12px;
+    padding: 4px 12px 10px;
+}
+
+:root:not(.qbitmb-classic) fieldset.settings legend {
+    color: var(--mac-label);
+    float: left;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 4px -2px;
+    padding: 6px 0 2px;
+    width: 100%;
+}
+
+:root:not(.qbitmb-classic) fieldset.settings legend + * {
+    clear: both;
+}
+
+:root:not(.qbitmb-classic) fieldset.settings fieldset.settings {
+    background-color: transparent;
+    box-shadow: inset 0 1px 0 var(--mac-separator);
+    border-radius: 0;
+    margin: 6px 0;
+    padding: 0 0 4px;
+}
+
+/* statistics and similar card-like tables */
+:root:not(.qbitmb-classic) #statisticsContent table {
+    background-color: var(--mac-group);
+    border-radius: 10px;
+    box-shadow: 0 0 0 0.5px var(--mac-separator);
+}
+
+/* ------------------------------------------------------------------ */
+/* Multi-select drop-down (tags in the add torrent dialog)            */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic) .vsb-main button {
+    background: var(--mac-img-chevrons) right 7px center / 8px 12px no-repeat var(--mac-button) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: var(--mac-button-shadow);
+    color: var(--mac-label) !important;
+}
+
+:root:not(.qbitmb-classic) .vsb-main .vsb-menu {
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+    background-color: var(--mac-menu) !important;
+    border: none !important;
+    border-radius: var(--mac-radius-menu);
+    box-shadow: var(--mac-menu-shadow);
+}
+
+/* ------------------------------------------------------------------ */
+/* Login page (public/index.html has no theme switch: always macOS)   */
+/* ------------------------------------------------------------------ */
+
+:root:not(.qbitmb-classic):has(#loginform) {
+    color-scheme: light dark;
+
+    & body {
+        background:
+            radial-gradient(1200px 800px at 15% 10%, rgb(255 190 140 / 55%), transparent 60%),
+            radial-gradient(1000px 700px at 85% 20%, rgb(120 170 255 / 55%), transparent 60%),
+            radial-gradient(900px 900px at 50% 100%, rgb(180 120 255 / 45%), transparent 60%),
+            #eef0f5;
+        color: var(--mac-label);
+        display: flow-root;
+        font-family: var(--mac-font);
+        font-size: 13px;
+        min-height: 100vh;
+    }
+
+    & #main {
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        backdrop-filter: blur(40px) saturate(180%);
+        background-color: rgb(255 255 255 / 55%);
+        border-radius: 22px;
+        box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 90%), 0 0 0 0.5px rgb(0 0 0 / 10%), 0 24px 60px rgb(0 0 0 / 18%);
+        margin-top: 12vh;
+        max-width: 360px;
+        padding: 28px 32px 24px;
+    }
+
+    & #main h1 {
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 14px;
+    }
+
+    & #logo img {
+        filter: drop-shadow(0 6px 12px rgb(0 0 0 / 18%));
+        height: 96px;
+        margin-bottom: 6px;
+    }
+
+    & #formplace {
+        width: 100%;
+    }
+
+    & #formplace label {
+        color: var(--mac-label-2);
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    & .login-input {
+        background-color: rgb(255 255 255 / 75%);
+        border: 1px solid var(--mac-control-border);
+        border-radius: 8px;
+        color: var(--mac-label);
+        font-size: 14px;
+        margin: 4px 0 10px;
+        padding: 7px 10px;
+    }
+
+    & .login-input:focus {
+        border-color: var(--mac-accent);
+        box-shadow: 0 0 0 3px var(--mac-accent-soft);
+        outline: none;
+    }
+
+    & #loginButton {
+        background-color: var(--mac-accent);
+        border: none;
+        border-radius: 999px;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        margin-top: 6px;
+        padding: 7px;
+    }
+
+    & #error_msg {
+        color: var(--mac-red);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.qbitmb-classic):has(#loginform) {
+        --mac-accent: #0a84ff;
+        --mac-accent-soft: rgb(10 132 255 / 45%);
+        --mac-label: rgb(255 255 255 / 88%);
+        --mac-label-2: rgb(235 235 245 / 60%);
+        --mac-control-border: rgb(255 255 255 / 15%);
+        --mac-red: #ff453a;
+
+        & body {
+            background:
+                radial-gradient(1200px 800px at 15% 10%, rgb(255 140 90 / 30%), transparent 60%),
+                radial-gradient(1000px 700px at 85% 20%, rgb(60 110 255 / 35%), transparent 60%),
+                radial-gradient(900px 900px at 50% 100%, rgb(150 80 255 / 30%), transparent 60%),
+                #15161a;
+        }
+
+        & #main {
+            background-color: rgb(40 40 44 / 55%);
+            box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 15%), 0 0 0 0.5px rgb(0 0 0 / 50%), 0 24px 60px rgb(0 0 0 / 50%);
+        }
+
+        & .login-input {
+            background-color: rgb(255 255 255 / 8%);
+        }
+    }
+}
