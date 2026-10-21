@@ -132,3 +132,16 @@ jobs:
             --title "qbitmb for qBittorrent ${VERSION}" \
             --notes-file notes.md \
             --latest="${LATEST}"
+
+  # GitHub disables scheduled workflows after 60 days without repository
+  # activity; re-enabling the workflow every day keeps the schedule alive
+  keepalive:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Keep the daily schedule enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/build.yml/enable"
