@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+QBITMB_VERSION=$(cat /qbitmb/version.txt 2>/dev/null)
+QBT_VERSION=$(/app/qbittorrent-nox --version 2>/dev/null | grep -Po 'v\K[0-9.]+')
+
+echo "**** qbitmb: WebUI from qBittorrent ${QBITMB_VERSION:-unknown}, installed qBittorrent ${QBT_VERSION:-unknown} ****"
+if [[ -n ${QBITMB_VERSION} ]] && [[ -n ${QBT_VERSION} ]] && [[ ${QBITMB_VERSION} != "${QBT_VERSION}" ]]; then
+    echo "**** qbitmb: versions differ, some WebUI features may not work until the mod is rebuilt ****"
+fi
+echo "**** qbitmb: enable it in Options > WebUI > Use alternative WebUI, files location: /qbitmb ****"
