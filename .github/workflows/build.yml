@@ -14,7 +14,7 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -39,6 +39,7 @@ jobs:
           if [[ -n "${INPUT_VERSION:-}" ]]; then
             version="${INPUT_VERSION}"
             tags="${image}:${version}"
+            latest=false
           else
             # label looks like "5.3.0_v2.1.2-ls484"
             label=$(docker buildx imagetools inspect docker.io/linuxserver/qbittorrent:latest \
@@ -46,6 +47,7 @@ jobs:
               | jq -r '."org.opencontainers.image.version"')
             version="${label%%_*}"
             tags="${image}:${version},${image}:latest"
+            latest=true
           fi
 
           if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -63,6 +65,7 @@ jobs:
           {
             echo "version=${version}"
             echo "tags=${tags}"
+            echo "latest=${latest}"
             echo "skip=${skip}"
           } >> "${GITHUB_OUTPUT}"
 
@@ -88,6 +91,44 @@ jobs:
           tags: ${{ steps.version.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.description=qBittorrent stock WebUI with speed in bits (kbit/s, Mbit/s), as a linuxserver.io docker mod
+            org.opencontainers.image.description=qBittorrent stock WebUI with a macOS look and speed in bits (kbit/s, Mbit/s), as a linuxserver.io docker mod
             org.opencontainers.image.licenses=GPL-2.0-or-later
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
+
+      # the same WebUI as a zip, for installs without Docker
+      - name: Export WebUI files
+        if: steps.version.outputs.skip != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          target: webui
+          build-args: QBT_VERSION=${{ steps.version.outputs.version }}
+          outputs: type=local,dest=webui-out
+
+      - name: Publish release
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          LATEST: ${{ steps.version.outputs.latest }}
+        run: |
+          set -euo pipefail
+          (cd webui-out && zip -qr ../qbitmb.zip qbitmb)
+
+          tag="qbt-${VERSION}"
+          cat > notes.md <<EOF
+          Веб-интерфейс qbitmb для qBittorrent ${VERSION}.
+
+          Распакуйте \`qbitmb.zip\` и укажите папку \`qbitmb\` в **Настройки → Веб-интерфейс → Использовать альтернативный веб-интерфейс**. Подробнее — в [README](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}#readme).
+
+          Собрано из ${GITHUB_SHA::7}.
+          EOF
+
+          # one release per qBittorrent version, rebuilt from the latest commit
+          gh release delete "${tag}" --repo "${GITHUB_REPOSITORY}" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "${tag}" qbitmb.zip \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "qbitmb для qBittorrent ${VERSION}" \
+            --notes-file notes.md \
+            --latest="${LATEST}"

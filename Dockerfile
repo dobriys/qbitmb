@@ -41,6 +41,11 @@ RUN \
   echo "${QBT_VERSION}" > /root-layer/qbitmb/version.txt && \
   chmod -R u=rwX,go=rX /root-layer/qbitmb
 
+## WebUI files only, for the zip release (docker build --target webui) ##
+FROM scratch AS webui
+
+COPY --from=buildstage /root-layer/qbitmb/ /qbitmb/
+
 ## Single layer deployed image ##
 FROM scratch
 
